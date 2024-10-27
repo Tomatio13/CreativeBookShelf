@@ -17,7 +17,7 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
         placeholder="本のタイトルを検索..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-10 w-full max-w-sm"
+        className="pl-10 w-full"
       />
     </div>
   );
