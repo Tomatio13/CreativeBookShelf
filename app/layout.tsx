@@ -6,7 +6,7 @@ import Layout from "@/components/Layout";
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Book Generator',
+  title: 'BookShelf',
   description: 'AI powered book generation system',
 };
 
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <body className={inter.className}>
         <Layout>{children}</Layout>
       </body>
