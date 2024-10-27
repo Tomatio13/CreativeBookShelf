@@ -3,7 +3,15 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  images: { unoptimized: true },
+  images: {
+    domains: ['localhost'], // 開発環境用
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**', // 本番環境のドメインを設定
+      },
+    ],
+  },
   async rewrites() {
     return [
       {

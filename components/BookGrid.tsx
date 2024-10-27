@@ -12,6 +12,9 @@ interface BookGridProps {
   books: Book[];
 }
 
+// デフォルトのカバー画像のパスを設定
+const DEFAULT_COVER_IMAGE = '/covers/default-cover.jpg'; // このパスは実際の画像に合わせて変更してください
+
 export default function BookGrid({ books }: BookGridProps) {
   const [likedBooks, setLikedBooks] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,7 +81,7 @@ export default function BookGrid({ books }: BookGridProps) {
             <Card key={book.id} className="overflow-hidden group">
               <div className="relative aspect-[3/4]">
                 <Image
-                  src={book.coverImage}
+                  src={book.cover_image ? book.cover_image : DEFAULT_COVER_IMAGE}
                   alt={book.title}
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
@@ -102,7 +105,7 @@ export default function BookGrid({ books }: BookGridProps) {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => window.open(book.pdfPath, '_blank')}
+                    onClick={() => window.open(book.pdf_path || '', '_blank')}
                   >
                     <Download className="h-4 w-4" />
                   </Button>

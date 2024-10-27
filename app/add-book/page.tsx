@@ -94,19 +94,36 @@ export default function AddBook() {
           ]);
 
           // 本をデータベースに追加
-          await fetch("/api/books", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: statusData.title,
-              author: statusData.author,  // "AI" から statusData.author に変更
-              coverImage: coverPath.path,
-              description: formData.bookContent,
-              pdfPath: pdfPath.path,
-            }),
-          });
+          try {
+            const response = await fetch("/api/books", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: statusData.title,
+                author: statusData.author,
+                coverImage: coverPath.path,
+                description: formData.bookContent,
+                pdfPath: pdfPath.path,
+              }),
+            });
 
-          router.push("/");
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || '本の登録に失敗しました');
+            }
+
+            const bookData = await response.json();
+            console.log('Book added successfully:', bookData);
+
+            router.push("/");
+          } catch (error) {
+            console.error("Error adding book to database:", error);
+            setError(error instanceof Error ? error.message : "本の登録に失敗しました");
+            setIsLoading(false);
+            setProgress("");
+            return; // エラーが発生した場合は処理を中断
+          }
+
         }
 
         retryCount++;
