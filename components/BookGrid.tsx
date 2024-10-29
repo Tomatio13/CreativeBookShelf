@@ -7,23 +7,39 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import SearchBar from './SearchBar';
+import { useAuth } from './AuthProvider';
 
 interface BookGridProps {
   books: Book[];
 }
 
 // デフォルトのカバー画像のパスを設定
-const DEFAULT_COVER_IMAGE = '/covers/default-cover.jpg'; // このパスは実際の画像に合わせて変更してください
+const DEFAULT_COVER_IMAGE = '/covers/default-cover.jpg';
 
 export default function BookGrid({ books }: BookGridProps) {
+  const { user } = useAuth();
   const [likedBooks, setLikedBooks] = useState<Set<number>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
   
+  // いいね数を取得する関数
+  const fetchLikeCounts = async () => {
+    try {
+      const response = await fetch('/api/books/like?mode=count');
+      const counts = await response.json();
+      setLikeCounts(counts);
+    } catch (error) {
+      console.error('Failed to fetch like counts:', error);
+    }
+  };
+
   // 初期読み込み時にいいね情報を取得
   useEffect(() => {
     const fetchLikes = async () => {
+      if (!user) return;
+      
       try {
-        const response = await fetch('/api/books/like');
+        const response = await fetch(`/api/books/like?userId=${user.id}`);
         const likedBookIds = await response.json();
         setLikedBooks(new Set(likedBookIds));
       } catch (error) {
@@ -32,20 +48,25 @@ export default function BookGrid({ books }: BookGridProps) {
     };
     
     fetchLikes();
-  }, []);
+    fetchLikeCounts(); // いいね数も取得
+  }, [user]);
 
   const toggleLike = async (bookId: number) => {
+    if (!user) return;
+
     try {
       const newLiked = !likedBooks.has(bookId);
       
-      // APIを呼び出していいね状態を更新
       await fetch('/api/books/like', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookId, liked: newLiked }),
+        body: JSON.stringify({ 
+          bookId, 
+          liked: newLiked,
+          userId: user.id
+        }),
       });
       
-      // ローカルの状態を更新
       setLikedBooks(prev => {
         const newSet = new Set(prev);
         if (newLiked) {
@@ -55,6 +76,12 @@ export default function BookGrid({ books }: BookGridProps) {
         }
         return newSet;
       });
+
+      // いいねを更新した後、カウントも更新
+      setLikeCounts(prev => ({
+        ...prev,
+        [bookId]: (prev[bookId] || 0) + (newLiked ? 1 : -1)
+      }));
     } catch (error) {
       console.error('Failed to toggle like:', error);
     }
@@ -91,17 +118,22 @@ export default function BookGrid({ books }: BookGridProps) {
                 <h3 className="font-semibold text-lg mb-1 line-clamp-2">{book.title}</h3>
                 <p className="text-sm text-gray-600 mb-2">{book.author}</p>
                 <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => toggleLike(book.id)}
-                  >
-                    <Heart
-                      className={`h-4 w-4 ${
-                        likedBooks.has(book.id) ? 'fill-red-500 text-red-500' : ''
-                      }`}
-                    />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => toggleLike(book.id)}
+                    >
+                      <Heart
+                        className={`h-4 w-4 ${
+                          likedBooks.has(book.id) ? 'fill-red-500 text-red-500' : ''
+                        }`}
+                      />
+                    </Button>
+                    <span className="text-sm text-gray-500">
+                      {likeCounts[book.id] || 0}
+                    </span>
+                  </div>
                   <Button
                     variant="outline"
                     size="icon"

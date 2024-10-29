@@ -1,20 +1,41 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { Erica_One } from 'next/font/google';
 
 export const dynamic = 'force-dynamic';
 
 // GET: ユーザーがいいねした本のIDリストを取得
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
+  const mode = searchParams.get('mode');
+
+  if (mode === 'count') {
+    // 各本のいいね数を取得
+    const { data: likes, error } = await supabase
+      .from('likes')
+      .select('book_id');
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // 手動でカウントを集計
+    const countsMap = likes.reduce((acc, curr) => {
+      acc[curr.book_id] = (acc[curr.book_id] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+
+    return NextResponse.json(countsMap);
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   
-  if (!session?.user) {
-    return NextResponse.json([]);
-  }
 
   const { data: likes, error } = await supabase
     .from('likes')
     .select('book_id')
-    .eq('user_id', session.user.id);
+    .eq('user_id', userId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -27,11 +48,9 @@ export async function GET() {
 export async function POST(request: Request) {
   const { data: { session } } = await supabase.auth.getSession();
   
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+ 
 
-  const { bookId, liked } = await request.json();
+  const { bookId, liked, userId } = await request.json();
   
   if (liked) {
     // いいねを追加
@@ -40,11 +59,12 @@ export async function POST(request: Request) {
       .insert([
         {
           book_id: bookId,
-          user_id: session.user.id,
+          user_id: userId,
         },
       ]);
 
     if (error) {
+      console.log(error.message)
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   } else {
@@ -53,7 +73,7 @@ export async function POST(request: Request) {
       .from('likes')
       .delete()
       .eq('book_id', bookId)
-      .eq('user_id', session.user.id);
+      .eq('user_id', userId);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
