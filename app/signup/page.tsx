@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import pb from '@/lib/pocketbase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
@@ -14,6 +14,7 @@ export default function SignUpPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    passwordConfirm: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,16 +23,20 @@ export default function SignUpPage() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signUp({
+      await pb.collection('users').create({
         email: formData.email,
         password: formData.password,
-      })
+        passwordConfirm: formData.passwordConfirm,
+      });
 
-      if (error) throw error
+      await pb.collection('users').authWithPassword(
+        formData.email,
+        formData.password
+      );
 
-      alert('確認メールを送信しました。メールを確認してアカウントを有効化してください。')
-      router.push('/login')
+      router.push('/')
     } catch (error: any) {
+      console.error('Signup error:', error)
       setError('アカウント作成に失敗しました。入力内容を確認してください。')
     } finally {
       setIsLoading(false)
@@ -81,6 +86,21 @@ export default function SignUpPage() {
                 required
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="passwordConfirm" className="block text-sm font-medium text-gray-700">
+                パスワード（確認）
+              </label>
+              <Input
+                id="passwordConfirm"
+                name="passwordConfirm"
+                type="password"
+                required
+                value={formData.passwordConfirm}
+                onChange={(e) => setFormData({ ...formData, passwordConfirm: e.target.value })}
                 className="mt-1"
               />
             </div>

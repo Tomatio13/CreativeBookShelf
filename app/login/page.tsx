@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import pb from '@/lib/pocketbase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
@@ -22,24 +22,12 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      })
+      await pb.collection('users').authWithPassword(
+        formData.email,
+        formData.password
+      );
 
-      console.log('Login response:', { data, error })
-
-      if (error) throw error
-
-      if (data.session) {
-        console.log('Session established:', data.session)
-        
-        // セッションを確実に保存するため、少し待機
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // ページをリロード
-        window.location.href = '/'
-      }
+      window.location.href = '/'
     } catch (error: any) {
       console.error('Login error:', error)
       setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。')

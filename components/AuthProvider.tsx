@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import pb from '@/lib/pocketbase'
 
 const AuthContext = createContext<{
   user: any
@@ -25,12 +25,20 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
+    // Pocketbaseの認証状態を監視
+    pb.authStore.onChange((token, model) => {
+      setUser(model)
+      if (!model && !['/login', '/signup'].includes(pathname)) {
+        router.push('/login')
+      }
+    })
 
-        if (!session && !['/login', '/signup'].includes(pathname)) {
+    // 初期認証状態の確認
+    const checkAuth = async () => {
+      try {
+        if (pb.authStore.isValid) {
+          setUser(pb.authStore.model)
+        } else if (!['/login', '/signup'].includes(pathname)) {
           router.push('/login')
         }
       } catch (error) {
@@ -40,24 +48,11 @@ export default function AuthProvider({
       }
     }
 
-    checkUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session)
-      setUser(session?.user ?? null)
-
-      if (!session && !['/login', '/signup'].includes(pathname)) {
-        router.push('/login')
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
+    checkAuth()
   }, [pathname, router])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    pb.authStore.clear()
     router.push('/login')
   }
 

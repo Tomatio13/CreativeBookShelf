@@ -1,84 +1,78 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { Erica_One } from 'next/font/google';
+import pb from '@/lib/pocketbase';
 
 export const dynamic = 'force-dynamic';
 
-// GET: ユーザーがいいねした本のIDリストを取得
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
-  const mode = searchParams.get('mode');
-
-  if (mode === 'count') {
-    // 各本のいいね数を取得
-    const { data: likes, error } = await supabase
-      .from('likes')
-      .select('book_id');
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    // 手動でカウントを集計
-    const countsMap = likes.reduce((acc, curr) => {
-      acc[curr.book_id] = (acc[curr.book_id] || 0) + 1;
-      return acc;
-    }, {} as Record<number, number>);
-
-    return NextResponse.json(countsMap);
-  }
-
-  const { data: { session } } = await supabase.auth.getSession();
-  
-
-  const { data: likes, error } = await supabase
-    .from('likes')
-    .select('book_id')
-    .eq('user_id', userId);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(likes.map(like => like.book_id));
+interface Like {
+  id: string;
+  book_id: string;
+  user_id: string;
 }
 
-// POST: いいねを追加または削除
-export async function POST(request: Request) {
-  const { data: { session } } = await supabase.auth.getSession();
-  
- 
+// サーバーサイドでのPocketBase URLの設定
+const pocketbaseUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL?.replace('localhost', 'pocketbase');
+if (pocketbaseUrl) {
+  pb.baseUrl = pocketbaseUrl;
+}
 
-  const { bookId, liked, userId } = await request.json();
-  
-  if (liked) {
-    // いいねを追加
-    const { error } = await supabase
-      .from('likes')
-      .insert([
-        {
-          book_id: bookId,
-          user_id: userId,
-        },
-      ]);
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const user_id = searchParams.get('user_id');
+  const mode = searchParams.get('mode');
 
-    if (error) {
-      console.log(error.message)
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-  } else {
-    // いいねを削除
-    const { error } = await supabase
-      .from('likes')
-      .delete()
-      .eq('book_id', bookId)
-      .eq('user_id', userId);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  if (!user_id && mode !== 'count') {
+    return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
   }
-  
-  return NextResponse.json({ success: true });
+
+  try {
+    if (mode === 'count') {
+      const likes = await pb.collection('likes').getFullList<Like>();
+      
+      const countsMap = likes.reduce((acc: Record<string, number>, curr: Like) => {
+        acc[curr.book_id] = (acc[curr.book_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      return NextResponse.json(countsMap);
+    }
+
+    const likes = await pb.collection('likes').getFullList<Like>({
+      filter: `user_id = "${user_id}"`,
+    });
+
+    return NextResponse.json(likes.map(like => like.book_id));
+  } catch (error) {
+    console.error('Error in GET /api/books/like:', error);
+    
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    
+    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { bookId, liked, user_id } = await request.json();
+    
+    if (liked) {
+      await pb.collection('likes').create({
+        book_id: bookId,
+        user_id: user_id,
+      });
+    } else {
+      const likes = await pb.collection('likes').getFullList<Like>({
+        filter: `book_id = "${bookId}" && user_id = "${user_id}"`,
+      });
+      
+      if (likes.length > 0) {
+        await pb.collection('likes').delete(likes[0].id);
+      }
+    }
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update like' }, { status: 500 });
+  }
 }

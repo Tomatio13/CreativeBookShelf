@@ -9,17 +9,27 @@ import { Card } from '@/components/ui/card';
 import SearchBar from './SearchBar';
 import { useAuth } from './AuthProvider';
 
+import { BookRecord } from '@/lib/pocketbase';
+
 interface BookGridProps {
-  books: Book[];
+  books: BookRecord[];
+  onReload?: () => void;
 }
 
 // デフォルトのカバー画像のパスを設定
 const DEFAULT_COVER_IMAGE = '/covers/default-cover.jpg';
 
-export default function BookGrid({ books }: BookGridProps) {
+// PocketBaseのURLを適切に変換する関数を追加
+function convertPocketBaseUrl(url: string): string {
+  if (!url) return url;
+  // 開発環境でのURLの変換
+  return url.replace('http://pocketbase:8090', process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090');
+}
+
+export default function BookGrid({ books, onReload }: BookGridProps) {
   const { user } = useAuth();
-  const [likedBooks, setLikedBooks] = useState<Set<number>>(new Set());
-  const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
+  const [likedBooks, setLikedBooks] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
   
   // いいね数を取得する関数
@@ -39,8 +49,9 @@ export default function BookGrid({ books }: BookGridProps) {
       if (!user) return;
       
       try {
-        const response = await fetch(`/api/books/like?userId=${user.id}`);
+        const response = await fetch(`/api/books/like?user_id=${user.id}`);
         const likedBookIds = await response.json();
+        console.log('Fetched liked books:', likedBookIds);
         setLikedBooks(new Set(likedBookIds));
       } catch (error) {
         console.error('Failed to fetch likes:', error);
@@ -48,14 +59,16 @@ export default function BookGrid({ books }: BookGridProps) {
     };
     
     fetchLikes();
-    fetchLikeCounts(); // いいね数も取得
+    fetchLikeCounts();
   }, [user]);
 
-  const toggleLike = async (bookId: number) => {
+  const toggleLike = async (bookId: string) => {
     if (!user) return;
 
     try {
       const newLiked = !likedBooks.has(bookId);
+      console.log('Current liked state:', likedBooks);
+      console.log('Toggling like for book:', bookId, 'to:', newLiked);
       
       await fetch('/api/books/like', {
         method: 'POST',
@@ -63,7 +76,7 @@ export default function BookGrid({ books }: BookGridProps) {
         body: JSON.stringify({ 
           bookId, 
           liked: newLiked,
-          userId: user.id
+          user_id: user.id
         }),
       });
       
@@ -74,14 +87,11 @@ export default function BookGrid({ books }: BookGridProps) {
         } else {
           newSet.delete(bookId);
         }
+        console.log('New liked state:', newSet);
         return newSet;
       });
 
-      // いいねを更新した後、カウントも更新
-      setLikeCounts(prev => ({
-        ...prev,
-        [bookId]: (prev[bookId] || 0) + (newLiked ? 1 : -1)
-      }));
+      await fetchLikeCounts();
     } catch (error) {
       console.error('Failed to toggle like:', error);
     }
@@ -108,9 +118,14 @@ export default function BookGrid({ books }: BookGridProps) {
             <Card key={book.id} className="overflow-hidden group">
               <div className="relative aspect-[3/4]">
                 <Image
-                  src={book.cover_image ? book.cover_image : DEFAULT_COVER_IMAGE}
+                  src={book.cover_image ? 
+                    book.cover_image.startsWith('http') 
+                      ? book.cover_image
+                      : `${process.env.NEXT_PUBLIC_POCKETBASE_URL}/api/files/book_covers/${book.cover_image}`
+                    : DEFAULT_COVER_IMAGE}
                   alt={book.title}
                   fill
+                  priority
                   className="object-cover transition-transform group-hover:scale-105"
                 />
               </div>
@@ -137,7 +152,16 @@ export default function BookGrid({ books }: BookGridProps) {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => window.open(book.pdf_path || '', '_blank')}
+                    onClick={() => {
+                      if (book.pdf_path) {
+                        window.open(
+                          book.pdf_path.startsWith('http') 
+                            ? convertPocketBaseUrl(book.pdf_path) 
+                            : `${process.env.NEXT_PUBLIC_POCKETBASE_URL}/api/files/book_files/${book.pdf_path}`,
+                          '_blank'
+                        );
+                      }
+                    }}
                   >
                     <Download className="h-4 w-4" />
                   </Button>

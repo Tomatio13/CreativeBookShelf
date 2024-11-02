@@ -74,55 +74,51 @@ export default function AddBook() {
 
           setProgress("ファイルをアップロード中...");
 
-          // ファイルをアップロード
+          // PocketBaseにファイルをアップロード
           const pdfFormData = new FormData();
-          pdfFormData.append("file", pdfBlob, `${task_id}.pdf`);
-          pdfFormData.append("type", "pdf");
+          pdfFormData.append('file', pdfBlob, `${task_id}.pdf`);
+          pdfFormData.append('type', 'pdf');
 
           const coverFormData = new FormData();
-          coverFormData.append("file", coverBlob, `${task_id}.png`);
-          coverFormData.append("type", "cover");
+          coverFormData.append('file', coverBlob, `${task_id}.png`);
+          coverFormData.append('type', 'cover');
 
           const [pdfUpload, coverUpload] = await Promise.all([
             fetch("/api/upload", { method: "POST", body: pdfFormData }),
             fetch("/api/upload", { method: "POST", body: coverFormData }),
           ]);
 
-          const [pdfPath, coverPath] = await Promise.all([
+          const [pdfData, coverData] = await Promise.all([
             pdfUpload.json(),
             coverUpload.json(),
           ]);
 
           // 本をデータベースに追加
-          try {
-            const response = await fetch("/api/books", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                title: statusData.title,
-                author: statusData.author,
-                coverImage: coverPath.path,
-                description: formData.bookContent,
-                pdfPath: pdfPath.path,
-              }),
-            });
+          const response = await fetch("/api/books", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: statusData.title,
+              author: statusData.author,
+              coverImage: coverData.path,
+              description: formData.bookContent,
+              pdfPath: pdfData.path,
+            }),
+          });
 
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.error || '本の登録に失敗しました');
-            }
-
-            const bookData = await response.json();
-            console.log('Book added successfully:', bookData);
-
-            router.push("/");
-          } catch (error) {
-            console.error("Error adding book to database:", error);
-            setError(error instanceof Error ? error.message : "本の登録に失敗しました");
-            setIsLoading(false);
-            setProgress("");
-            return; // エラーが発生した場合は処理を中断
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '本の登録に失敗しました');
           }
+
+          const bookData = await response.json();
+          console.log('Book added successfully:', bookData);
+
+          // ホームページに戻る前に少し待機（データの反映を待つ）
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          router.push('/');
+          router.refresh(); // Next.jsのルーターリフレッシュを追加
 
         }
 

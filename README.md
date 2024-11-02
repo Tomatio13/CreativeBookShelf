@@ -77,10 +77,6 @@ for insert with check (auth.role() = 'authenticated');
 -- likesテーブルのポリシー
 create policy "Enable read access for authenticated users" on public.likes
 for select using (auth.uid() = user_id);
-create policy "Enable insert access for authenticated users" on public.likes
-for insert with check (auth.uid() = user_id);
-create policy "Enable delete access for authenticated users" on public.likes
-for delete using (auth.uid() = user_id);
 ```
 
 ### 3. 環境変数の設定
