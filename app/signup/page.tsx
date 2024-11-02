@@ -6,9 +6,13 @@ import pb from '@/lib/pocketbase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { translations } from '@/lib/i18n/translations'
 
 export default function SignUpPage() {
   const router = useRouter()
+  const { language, setLanguage } = useLanguage()
+  const t = translations[language]
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -37,7 +41,7 @@ export default function SignUpPage() {
       router.push('/')
     } catch (error: any) {
       console.error('Signup error:', error)
-      setError('アカウント作成に失敗しました。入力内容を確認してください。')
+      setError(t.signupError)
     } finally {
       setIsLoading(false)
     }
@@ -46,9 +50,18 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLanguage(language === 'en' ? 'ja' : 'en')}
+          >
+            {language === 'en' ? t.switchToJapanese : t.switchToEnglish}
+          </Button>
+        </div>
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            アカウント作成
+            {t.signup}
           </h2>
         </div>
         
@@ -62,7 +75,7 @@ export default function SignUpPage() {
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                メールアドレス
+                {t.email}
               </label>
               <Input
                 id="email"
@@ -77,7 +90,7 @@ export default function SignUpPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                パスワード
+                {t.password}
               </label>
               <Input
                 id="password"
@@ -92,7 +105,7 @@ export default function SignUpPage() {
 
             <div>
               <label htmlFor="passwordConfirm" className="block text-sm font-medium text-gray-700">
-                パスワード（確認）
+                {t.passwordConfirm}
               </label>
               <Input
                 id="passwordConfirm"
@@ -111,7 +124,7 @@ export default function SignUpPage() {
             className="w-full"
             disabled={isLoading}
           >
-            {isLoading ? '作成中...' : 'アカウント作成'}
+            {isLoading ? t.processing : t.createAccount}
           </Button>
         </form>
 
@@ -120,7 +133,7 @@ export default function SignUpPage() {
             href="/login"
             className="text-sm text-blue-600 hover:text-blue-500"
           >
-            すでにアカウントをお持ちの方はこちら
+            {t.haveAccount}
           </Link>
         </div>
       </div>

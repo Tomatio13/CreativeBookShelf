@@ -5,10 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { useAuth } from "./AuthProvider";
+import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { translations } from '@/lib/i18n/translations'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const { language, setLanguage } = useLanguage();
+  const t = translations[language];
 
   // ログイン・サインアップ画面ではサイドバーを表示しない
   if (['/login', '/signup'].includes(pathname)) {
@@ -22,11 +26,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-between h-full px-4">
           <Link href="/" className="flex items-center space-x-2">
             <BookOpen className="h-6 w-6" />
-            <span className="font-bold text-xl">BookShelf</span>
+            <span className="font-bold text-xl">{t.bookshelf}</span>
           </Link>
           
           {user && (
             <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLanguage(language === 'en' ? 'ja' : 'en')}
+              >
+                {language === 'en' ? '日本語' : 'English'}
+              </Button>
               <span className="text-sm">{user.email}</span>
               <Button
                 variant="ghost"
@@ -35,7 +46,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 className="flex items-center space-x-1"
               >
                 <LogOut className="h-4 w-4" />
-                <span>ログアウト</span>
+                <span>{t.logout}</span>
               </Button>
             </div>
           )}
@@ -53,7 +64,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }`}
             >
               <Library className="h-5 w-5" />
-              <span>本の一覧</span>
+              <span>{t.bookList}</span>
             </Link>
             <Link
               href="/add-book"
@@ -62,7 +73,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }`}
             >
               <BookPlus className="h-5 w-5" />
-              <span>本の追加</span>
+              <span>{t.addBook}</span>
             </Link>
           </nav>
         </aside>

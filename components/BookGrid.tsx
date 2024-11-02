@@ -10,6 +10,8 @@ import SearchBar from './SearchBar';
 import { useAuth } from './AuthProvider';
 
 import { BookRecord } from '@/lib/pocketbase';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { translations } from '@/lib/i18n/translations';
 
 interface BookGridProps {
   books: BookRecord[];
@@ -32,6 +34,9 @@ export default function BookGrid({ books, onReload }: BookGridProps) {
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
   
+  const { language } = useLanguage();
+  const t = translations[language];
+
   // いいね数を取得する関数
   const fetchLikeCounts = async () => {
     try {
@@ -110,7 +115,7 @@ export default function BookGrid({ books, onReload }: BookGridProps) {
       
       {filteredBooks.length === 0 ? (
         <div className="text-center py-10">
-          <p className="text-gray-500">検索結果が見つかりませんでした</p>
+          <p className="text-gray-500">{t.noResults}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

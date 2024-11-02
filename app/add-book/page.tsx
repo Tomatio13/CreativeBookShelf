@@ -5,9 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { translations } from '@/lib/i18n/translations';
 
 export default function AddBook() {
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>("");
@@ -22,7 +26,7 @@ export default function AddBook() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    setProgress("本の生成を開始しています...");
+    setProgress(t.startingGeneration);
 
     try {
       const generateResponse = await fetch("/api/ai/generate-book", {
@@ -40,28 +44,28 @@ export default function AddBook() {
 
       let status = "processing";
       let retryCount = 0;
-      const maxRetries = 60; // 10分のタイムアウト（10秒 × 60）
+      const maxRetries = 60;
 
       while (status === "processing" && retryCount < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 10000)); // 10秒待機
+        await new Promise(resolve => setTimeout(resolve, 10000));
         const statusResponse = await fetch(`/api/ai/task/${task_id}`);
         const statusData = await statusResponse.json();
         status = statusData.status;
 
-        // エラーチェック
         if (statusData.detail) {
           throw new Error(statusData.detail);
         }
 
         if (status === "failed") {
-          throw new Error("本の生成に失敗しました");
+          throw new Error(t.generationError);
         }
 
-        // 進捗状況の更新
-        setProgress(`本を生成中です... (${Math.min(Math.round((retryCount + 1) / maxRetries * 100), 95)}%)`);
+        setProgress(t.generatingProgress.replace('{progress}', 
+          Math.min(Math.round((retryCount + 1) / maxRetries * 100), 95).toString()
+        ));
 
         if (status === "completed") {
-          setProgress("本の生成が完了しました。ファイルを処理中...");
+          setProgress(t.generationComplete);
           
           // PDFとカバー画像をダウンロード
           const [pdfResponse, coverResponse] = await Promise.all([
@@ -72,7 +76,7 @@ export default function AddBook() {
           const pdfBlob = await pdfResponse.blob();
           const coverBlob = await coverResponse.blob();
 
-          setProgress("ファイルをアップロード中...");
+          setProgress(t.uploadingFiles);
 
           // PocketBaseにファイルをアップロード
           const pdfFormData = new FormData();
@@ -131,7 +135,7 @@ export default function AddBook() {
 
     } catch (error) {
       console.error("Error:", error);
-      setError(error instanceof Error ? error.message : "予期せぬエラーが発生しました");
+      setError(error instanceof Error ? error.message : t.generationError);
     } finally {
       setIsLoading(false);
       setProgress("");
@@ -140,13 +144,15 @@ export default function AddBook() {
 
   return (
     <div className="max-w-2xl mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-6">本の追加</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">{t.addBookTitle}</h1>
+      </div>
       
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
           <p>{error}</p>
           <p className="mt-2 text-sm">
-            もう一度生成をお試しください。問題が解決しない場合は、入力内容を変更してみてください。
+            {t.retryMessage}
           </p>
         </div>
       )}
@@ -159,7 +165,7 @@ export default function AddBook() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block mb-2">本の概要</label>
+          <label className="block mb-2">{t.bookOverview}</label>
           <Textarea
             value={formData.bookContent}
             onChange={(e) => setFormData({ ...formData, bookContent: e.target.value })}
@@ -167,7 +173,7 @@ export default function AddBook() {
           />
         </div>
         <div>
-          <label className="block mb-2">想定読者</label>
+          <label className="block mb-2">{t.targetReaders}</label>
           <Textarea
             value={formData.targetReaders}
             onChange={(e) => setFormData({ ...formData, targetReaders: e.target.value })}
@@ -175,7 +181,7 @@ export default function AddBook() {
           />
         </div>
         <div>
-          <label className="block mb-2">想定ページ数</label>
+          <label className="block mb-2">{t.pageCount}</label>
           <Input
             type="number"
             value={formData.nPages}
@@ -185,7 +191,7 @@ export default function AddBook() {
           />
         </div>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "生成中..." : "本を生成"}
+          {isLoading ? t.generating : t.generateBook}
         </Button>
       </form>
     </div>
