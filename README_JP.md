@@ -22,13 +22,13 @@ AutoGenBookのDockerコンテナも別にセットアップ/起動しておい�
 ## 技術スタック
 
 - フロントエンド
-  - Next.js 14
+  - Next.js 15
   - TypeScript
   - Tailwind CSS
   - shadcn/ui
 
 - バックエンド
-  - Supabase (認証・データベース)
+  - Pockatebase (認証・データベース・ストレージ)
   - FastAPI (AI生成サーバー)
 
 ## セットアップ
@@ -37,7 +37,6 @@ AutoGenBookのDockerコンテナも別にセットアップ/起動しておい�
 
 - Node.js (v18以上)
 - npm (v9以上)
-- Supabaseアカウント
 
 ### 0. AutoGenBookのセットアップ
 https://github.com/Tomatio13/AutoGenBook
@@ -45,7 +44,7 @@ https://github.com/Tomatio13/AutoGenBook
 
 ### 1. リポジトリのクローン
 ```bash
-git clone <repository-url>
+git clone https://github.com/Tomatio13/CreativeBookShelf.git
 ```
 
 ### 2. ビルド

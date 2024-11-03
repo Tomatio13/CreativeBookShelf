@@ -22,13 +22,13 @@ Generated books are saved as PDFs and can be managed and viewed online.
 ## Technology Stack
 
 - Frontend
-  - Next.js 14
+  - Next.js 15
   - TypeScript
   - Tailwind CSS
   - shadcn/ui
 
 - Backend
-  - Supabase (Authentication & Database)
+  - Pockatebase (Authentication & Database & Storage)
   - FastAPI (AI Generation Server)
 
 ## Setup
@@ -37,7 +37,6 @@ Generated books are saved as PDFs and can be managed and viewed online.
 
 - Node.js (v18 or higher)
 - npm (v9 or higher)
-- Supabase account
 
 ### 0. AutoGenBook Setup
 Please refer to https://github.com/Tomatio13/AutoGenBook
@@ -45,7 +44,7 @@ to set up AutoGenBook.
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/Tomatio13/CreativeBookShelf.git
 ```
 
 ### 2. Build
