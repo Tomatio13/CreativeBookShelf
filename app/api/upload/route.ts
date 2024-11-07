@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
 import pb from '@/lib/pocketbase';
 
-// PocketBaseのURLを適切に変換する関数
-function convertPocketBaseUrl(url: string): string {
-  if (!url) return url;
-  const publicUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
-  return url.replace(pb.baseUrl, publicUrl);
-}
-
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -21,21 +14,41 @@ export async function POST(request: Request) {
       );
     }
 
-    const collectionName = type === 'pdf' ? 'book_files' : 'book_covers';
-    
+    let collectionName;
+    switch (type) {
+      case 'pdf':
+        collectionName = 'book_files';
+        break;
+      case 'cover':
+        collectionName = 'book_covers';
+        break;
+      case 'wav':
+        collectionName = 'book_wav';
+        break;
+      default:
+        return NextResponse.json(
+          { error: '不正なファイルタイプです' },
+          { status: 400 }
+        );
+    }
+
+    // FormDataの作成
     const fileData = new FormData();
     fileData.append('file', file);
 
-    const record = await pb.collection(collectionName).create(fileData);
+    try {
+      const record = await pb.collection(collectionName).create(fileData);
+      const fileUrl = pb.files.getUrl(record, record.file);
+      
+      return NextResponse.json({ 
+        filename: record.id,
+        path: fileUrl
+      });
+    } catch (uploadError) {
+      console.error('Upload error details:', uploadError);
+      throw uploadError;
+    }
 
-    // URLを適切に変換
-    // const fileUrl = convertPocketBaseUrl(pb.files.getUrl(record, record.file));
-    const fileUrl = pb.files.getUrl(record, record.file);
-    
-    return NextResponse.json({ 
-      filename: record.id,
-      path: fileUrl
-    });
   } catch (error) {
     console.error('ファイル保存エラー:', error);
     return NextResponse.json(

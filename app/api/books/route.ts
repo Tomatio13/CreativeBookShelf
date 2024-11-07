@@ -20,7 +20,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { title, author, coverImage, description, pdfPath } = await request.json();
+    const { title, author, coverImage, description, pdfPath, wavPath } = await request.json();
 
     if (!title || !author) {
       return NextResponse.json(
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
       cover_image: coverImage,
       description,
       pdf_path: pdfPath,
+      wav_path: wavPath,
     });
 
     return NextResponse.json(record, {

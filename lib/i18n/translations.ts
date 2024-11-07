@@ -31,6 +31,8 @@ export const translations = {
     uploadingFiles: 'Uploading files...',
     generationError: 'An error occurred. Please try again.',
     retryMessage: 'Please try generating again. If the problem persists, try modifying your input.',
+    voiceCharacter: 'Voice Character',
+    selectVoice: 'Select a voice character',
   },
   ja: {
     bookshelf: 'BookShelf',
@@ -64,5 +66,7 @@ export const translations = {
     uploadingFiles: 'ファイルをアップロード中...',
     generationError: '予期せぬエラーが発生しました',
     retryMessage: 'もう一度生成をお試しください。問題が解決しない場合は、入力内容を変更してみてください。',
+    voiceCharacter: '音声キャラクター',
+    selectVoice: '音声キャラクターを選択',
   },
 } as const 

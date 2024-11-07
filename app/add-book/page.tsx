@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { translations } from '@/lib/i18n/translations';
+import voicevoxChars from '@/voicevox_char.json'; // voicevox_char.jsonをインポート
 
 export default function AddBook() {
   const router = useRouter();
@@ -20,7 +21,14 @@ export default function AddBook() {
     targetReaders: "",
     nPages: 10,
     level: 1,
+    voiceCharId: 0, // 音声キャラクターIDを追加
   });
+
+  // 音声キャラクターの選択肢を設定
+  const voiceCharOptions = voicevoxChars.map(char => ({
+    id: char.id,
+    name: char.name,
+  }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +45,7 @@ export default function AddBook() {
           target_readers: formData.targetReaders,
           n_pages: Number(formData.nPages),
           level: formData.level,
+          wav_output: Number(formData.voiceCharId), // 選択された音声キャラクターIDを追加
         }),
       });
 
@@ -68,13 +77,15 @@ export default function AddBook() {
           setProgress(t.generationComplete);
           
           // PDFとカバー画像をダウンロード
-          const [pdfResponse, coverResponse] = await Promise.all([
+          const [pdfResponse, coverResponse, wavResponse] = await Promise.all([
             fetch(`/api/ai/download/${task_id}`),
             fetch(`/api/ai/download-cover/${task_id}`),
+            formData.voiceCharId > 0 ? fetch(`/api/ai/download-wav/${task_id}`) : Promise.resolve(null),
           ]);
 
           const pdfBlob = await pdfResponse.blob();
           const coverBlob = await coverResponse.blob();
+          const wavBlob = wavResponse ? await wavResponse.blob() : null;
 
           setProgress(t.uploadingFiles);
 
@@ -86,15 +97,22 @@ export default function AddBook() {
           const coverFormData = new FormData();
           coverFormData.append('file', coverBlob, `${task_id}.png`);
           coverFormData.append('type', 'cover');
-
-          const [pdfUpload, coverUpload] = await Promise.all([
+          const wavFormData = new FormData();
+          if (wavBlob) {
+            wavFormData.append('file', wavBlob, `${task_id}.wav`);
+            wavFormData.append('type', 'wav');
+          }
+          
+          const [pdfUpload, coverUpload, wavUpload] = await Promise.all([
             fetch("/api/upload", { method: "POST", body: pdfFormData }),
             fetch("/api/upload", { method: "POST", body: coverFormData }),
+            wavBlob ? fetch("/api/upload", { method: "POST", body: wavFormData }) : Promise.resolve(null),
           ]);
 
-          const [pdfData, coverData] = await Promise.all([
+          const [pdfData, coverData, wavData] = await Promise.all([
             pdfUpload.json(),
             coverUpload.json(),
+            wavUpload ? wavUpload.json() : Promise.resolve(null),
           ]);
 
           // 本をデータベースに追加
@@ -107,6 +125,7 @@ export default function AddBook() {
               coverImage: coverData.path,
               description: formData.bookContent,
               pdfPath: pdfData.path,
+              wavPath: wavBlob ? wavData.path : null,
             }),
           });
 
@@ -190,6 +209,23 @@ export default function AddBook() {
             required
           />
         </div>
+        {language == 'ja' && ( // 英語以外のときに表示
+          <div>
+            <label className="block mb-2">音声キャラクター</label>
+            <select
+              value={formData.voiceCharId.toString()}
+              onChange={(e) => setFormData({ ...formData, voiceCharId: Number(e.target.value) })}
+              className="block w-full p-2 border border-gray-300 rounded"
+            >
+              <option value="">選択してください</option>
+              {voiceCharOptions.map(option => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <Button type="submit" disabled={isLoading}>
           {isLoading ? t.generating : t.generateBook}
         </Button>

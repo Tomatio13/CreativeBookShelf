@@ -12,6 +12,7 @@ export interface BookRecord {
     pdf_path?: string;
     collectionId: string;
     collectionName: string;
+    wav_path?: string;
 }
 
 export interface LikeRecord {

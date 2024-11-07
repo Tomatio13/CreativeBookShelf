@@ -1,7 +1,7 @@
 "use client";
 
 import { Book } from '@/types/book';
-import { Heart, Download } from 'lucide-react';
+import { Heart, Download ,Volume2,VolumeOff} from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,8 @@ export default function BookGrid({ books, onReload }: BookGridProps) {
   const [likedBooks, setLikedBooks] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [wavFiles, setWavFiles] = useState<Record<string, boolean>>({});
+
   const { language } = useLanguage();
   const t = translations[language];
 
@@ -169,6 +170,28 @@ export default function BookGrid({ books, onReload }: BookGridProps) {
                     }}
                   >
                     <Download className="h-4 w-4" />
+                  </Button>
+                
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={!book.wav_path}
+                    onClick={() => {
+                      if (book.wav_path && language == 'ja') {
+                        window.open(
+                          book.wav_path.startsWith('http') 
+                            ? convertPocketBaseUrl(book.wav_path) 
+                            : `${process.env.NEXT_PUBLIC_POCKETBASE_URL}/api/files/book_wave/${book.wav_path}`,
+                          '_blank'
+                        );
+                      }
+                    }}
+                  >
+                  {book.wav_path && language == 'ja' ? (
+                    <Volume2 className="h-4 w-4" />
+                  ) : (
+                    <VolumeOff className="h-4 w-4 text-gray-400" />
+                  )}
                   </Button>
                 </div>
               </div>
