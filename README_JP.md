@@ -80,17 +80,25 @@ docker compose up -d
   - 各本に対してWavファイルのダウンロードが可能
 
 
-### wavファイルについて
-WAVファイルは、VOICEVOXの音声キャラクターを使用して本の内容を読み上げ、WAVファイルです。
+### AivispeechによるWAVファイル出力について
+WAVファイルは、AivispeechのAPIを使用して本の内容を読み上げたWAVファイルです。
+
+出力には[AivisSpeech-Engine](https://github.com/Aivis-Project/AivisSpeech-Engine.git)を使用します。
+日本語のみ対応しているため、英語表示では出力できません。
+
+AivisSpeech-Engineの起動方法を、[AutoGenBook](https://github.com/Tomatio13/AutoGenBook.git)のREADMEに記載しているので参照して起動して下さい。
+
+### VOICEVOXによるWAVファイル出力について
+WAVファイルは、VOICEVOXの音声キャラクターを使用して本の内容を読み上げたWAVファイルです。
 
 出力には[Voicevox Core Engine](https://github.com/VOICEVOX/voicevox_engine)を使用します。
 日本語のみ対応しているため、英語表示では出力できません。
 
-以下の方法で、Voicevox Core Engineを起動してください。
+Voicevox Core Engineの起動方法を、[AutoGenBook](https://github.com/Tomatio13/AutoGenBook.git)のREADMEに記載しているので参照して起動して下さい。
 
 Voicevoxのキャラクターは[キャラクター一覧](https://voicevox.hiroshiba.jp/)をご覧ください。
 
-#### 音声キャラクターのクレジット
+#### VOICEVOXの音声キャラクターのクレジット
 以下、クレジットです。
 音声ファイルはクレジットを記載すれば、商用・非商用で利用可能とされています。
 [キャラクター一覧](https://voicevox.hiroshiba.jp/)の利用規約をよく読んでください。
@@ -99,6 +107,12 @@ VOICEVOX：ずんだもん,四国めたん、春日部つむぎ、雨晴はう�
          もち子さん、剣崎雌雄、WhiteCUL、後鬼、No.7、ちび式じい、櫻歌ミコ、小夜/SAYO、ナースロボ_タイプT、✝聖騎士 紅櫻✝、
          雀松朱司、麒ヶ島宗麟、春歌ナナ、猫使アル、猫使ビィ、中国うさぎ、栗田まろん、あいえるたん、満別花丸、琴詠ニア、Voidoll(CV:丹下桜)
 
+### VOICECVOXを利用刷る場合
+original_voicevox_char.jsonを利用してください。
+```bash
+cp voicevox_char.json aivispeech_voicevox_char.json
+cp original_voicevox_char.json voicevox_char.json
+```
 
 ## ライセンス
 
